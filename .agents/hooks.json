@@ -1,0 +1,10 @@
+{
+  "skill-activation-reminder": {
+    "PreInvocation": [
+      {
+        "type": "command",
+        "command": "printf '%s\\n' '{\"injectSteps\":[{\"ephemeralMessage\":\"Identify and activate relevant skills for this task.\"}]}'"
+      }
+    ]
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "name": "streamtube-mcp",
+  "version": "1.0.0",
+  "description": "Workspace MCP servers for StreamTube (PostgreSQL and Context7 documentation lookup)."
+}
