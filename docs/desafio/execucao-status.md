@@ -6,11 +6,11 @@ immutable_refs:
   main_sha: "8459b2f3a9c0dcad4bd0f31972761c00c52609a1"
   dev_sha: "0b82246ff8fa9937f556c52ea6bb15357309d289"
 overall_status: in_progress
-current_stage: E2
-current_substep: E2.1
-last_completed_step: E1
-last_commit_sha: "4bc63e8d21c2166f98cd2f56418370ab8df4333c"
-updated_at: "2026-11-26T22:50:00-03:00"
+current_stage: E3
+current_substep: E3.1
+last_completed_step: E2
+last_commit_sha: "69b331b361b7af69b67810267be5ffb61f11901d"
+updated_at: "2026-11-26T23:15:40-03:00"
 ---
 
 # Controle de Execução Autônoma — Fase 03 (StreamTube)
@@ -20,9 +20,9 @@ updated_at: "2026-11-26T22:50:00-03:00"
 | Etapa | Descrição | Status | Artefato Chave / Evidência | Commit SHA |
 | :---: | :--- | :---: | :--- | :---: |
 | **E0** | Pré-flight, estado inicial, branch `feature/phase-03-videos` e baseline verde | `completed` | Branch `feature/phase-03-videos` criada; `npm test` (23/23, 144 tests), `test:e2e` (3/3, 52 tests) e `tsc --noEmit` verdes | `4bc63e8` |
-| **E1** | Research (`skill: research`) | `completed` | `docs/decisions/technical-decisions-phase-03-videos.md` (`status: pending`, `TD-01..TD-08`) | _(C1 — este commit)_ |
-| **E2** | Contexto + 1ª Validação (`plan-context` + `plan-validate`) | `in_progress` | `context.md` + `validation.md` (`dirty` com `OQ-N`) | — |
-| **E3** | Resolução + Context7 + Validação `clean` (`plan-resolve` + `plan-validate`) | `pending` | `library-refs.md` + `validation.md` (`status: clean`) | — |
+| **E1** | Research (`skill: research`) | `completed` | `docs/decisions/technical-decisions-phase-03-videos.md` (`status: pending`, `TD-01..TD-08`) | `69b331b` |
+| **E2** | Contexto + 1ª Validação (`plan-context` + `plan-validate`) | `completed` | `docs/phases/phase-03-videos/context.md` + `validation.md` (`status: dirty`, `OQ-1..OQ-8`) | _(C2 — este commit)_ |
+| **E3** | Resolução + Context7 + Validação `clean` (`plan-resolve` + `plan-validate`) | `in_progress` | `library-refs.md` + `validation.md` (`status: clean`) | — |
 | **E4** | Plano Executável + Test Specs (`plan-build` + `plan-test-specs`) | `pending` | `phase-03-videos.md` (+ `nestjs-project/specs/*.plan.md` se aplicável) | — |
 | **E5** | Implementação SI a SI (`skill: implement`) | `pending` | `docs/phases/phase-03-videos/progress.md` (`Status: completed`) | — |
 | **E6** | Verificação Empírica Ponta a Ponta em Runtime Real | `pending` | Evidência de upload multipart + worker + HTTP `206` + download | — |
@@ -37,4 +37,5 @@ _(Populado ao iniciar E5 com a lista exata de SIs gerada em `docs/phases/phase-0
 
 - `2026-11-26T22:27:35-03:00` — `[E0]` Inicialização do controle de execução autônoma (`E0.1` MCP `context7_context7` validado; `E0.2` SHAs imutáveis de `main` e `dev` capturados; `C0` `4bc63e8`).
 - `2026-11-26T22:42:34-03:00` — `[E0.4]` Infraestrutura base (`db`, `mailpit`, `nestjs-api`) ativa; baseline validada (`migration:run` OK, `npm test` 23 suítes / 144 testes OK, `npm run test:e2e` 3 suítes / 52 testes OK, `npx tsc --noEmit` exit 0; nota: `npm run lint` na baseline intocada da Fase 02 acusa warnings/erros `@typescript-eslint/no-unsafe-*` em specs legados de `auth`, mantidos fora de escopo nas Etapas E0–E4).
-- `2026-11-26T22:50:00-03:00` — `[E1]` Concluída etapa de Research com consultas Context7 (`@nestjs/bullmq`, `bullmq`, `@aws-sdk/client-s3`, `@aws-sdk/s3-request-presigner`, `@nestjs/core`) e emissão de `docs/decisions/technical-decisions-phase-03-videos.md` (`TD-01` a `TD-08` em `status: pending`).
+- `2026-11-26T22:50:00-03:00` — `[E1]` Concluída etapa de Research com consultas Context7 (`@nestjs/bullmq`, `bullmq`, `@aws-sdk/client-s3`, `@aws-sdk/s3-request-presigner`, `@nestjs/core`) e emissão de `docs/decisions/technical-decisions-phase-03-videos.md` (`TD-01` a `TD-08` em `status: pending`; `C1` `69b331b`).
+- `2026-11-26T23:15:40-03:00` — `[E2]` Concluídos `plan-context` (com despacho paralelo dos 5 subagentes de leitura, verificação `Filter Trace` `T=8` e correlação `high` com `openapi-docs-nestjs`) e 1ª passagem de `plan-validate` gerando `docs/phases/phase-03-videos/context.md` (100% de cobertura das 9 capabilities) e `docs/phases/phase-03-videos/validation.md` (`status: dirty`, `issue_count: 8` com `OQ-1..OQ-8`).
