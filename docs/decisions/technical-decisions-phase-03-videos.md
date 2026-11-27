@@ -1,7 +1,7 @@
 ---
 scope_type: phase
 related_phases: [3]
-status: pending
+status: decided
 date: 2026-11-26
 scope_description: "Backend architecture for Phase 03: S3/MinIO object storage topology, background queue and standalone worker, 10 GiB presigned multipart upload with draft pre-registration, FFmpeg/ffprobe metadata and thumbnail extraction, unique short-code URLs, HTTP Range streaming, download, and video lifecycle state machine."
 ---
@@ -42,7 +42,8 @@ _Subprojects in scope:_
 
 **Recommendation:** **Option A (BullMQ + Redis)** — Official `@nestjs/bullmq` integration matches NestJS 11 and `@nestjs/config` seamlessly, delivers retries, exponential backoff, and `UnrecoverableError` out of the box without manual DLX plumbing (unlike Option B), and honors the dedicated queue container architecture without polling PostgreSQL (unlike Option C).
 
-**Decision:** _[pending]_
+**Decision:** A (BullMQ + Redis via `@nestjs/bullmq` + `bullmq`)
+**Libraries:** @nestjs/bullmq, bullmq
 
 ---
 
@@ -73,7 +74,8 @@ _Subprojects in scope:_
 
 **Recommendation:** **Option A (AWS SDK v3 + Single Bucket with Key Prefixes + Dual Endpoint Config)** — Preserves 100% S3 portability between MinIO in Docker and AWS S3 in production, keeps bucket provisioning/testing atomic in one `streamtube` bucket with clean `videos/` and `thumbnails/` prefixes, and handles Docker-vs-public URL signing cleanly via config.
 
-**Decision:** _[pending]_
+**Decision:** A (`@aws-sdk/client-s3` + `@aws-sdk/s3-request-presigner`, single `streamtube` bucket + key prefixes + dual endpoint config)
+**Libraries:** @aws-sdk/client-s3, @aws-sdk/s3-request-presigner
 
 ---
 
@@ -109,7 +111,7 @@ _Subprojects in scope:_
 
 **Recommendation:** **Option A (API-Orchestrated S3 Presigned Multipart Upload)** — The only architecture that supports 10 GiB above S3's 5 GiB single-PUT limit, keeps NestJS API load at `O(1)` by sending bytes directly to S3/MinIO (aligning with `next-frontend-config-base/TD-03`), pre-registers the `draft` record atomically at handshake start, and exposes clean OpenAPI-typed REST endpoints (`openapi-docs-nestjs/TD-02`).
 
-**Decision:** _[pending]_
+**Decision:** A (API-Orchestrated S3 Presigned Multipart Upload with atomic `draft` pre-registration)
 
 ---
 
@@ -140,7 +142,7 @@ _Subprojects in scope:_
 
 **Recommendation:** **Option A (Standalone `NestFactory.createApplicationContext(WorkerModule)` in Dedicated `video-worker` Compose Service)** — Delivers true container-level process isolation between HTTP API and FFmpeg worker as required by the C4 architecture while reusing 100% of `nestjs-project/`'s TypeORM entities, `registerAs` configs (`phase-01-configuracao-base/TD-03`), and `StorageModule`.
 
-**Decision:** _[pending]_
+**Decision:** A (Standalone `NestFactory.createApplicationContext(WorkerModule)` in dedicated `video-worker` container)
 
 ---
 
@@ -171,7 +173,7 @@ _Subprojects in scope:_
 
 **Recommendation:** **Option A (Direct `execFile` of `ffprobe`/`ffmpeg` Over Presigned S3 `GET` URL with Pipe Output)** — Avoids downloading 10 GiB files to disk via native HTTP `Range` seeking, produces zero temporary filesystem artifacts, prevents shell injection, and avoids deprecated wrapper packages (`fluent-ffmpeg`).
 
-**Decision:** _[pending]_
+**Decision:** A (Direct `execFile` of `ffprobe`/`ffmpeg` over Presigned S3 `GET` URL with pipe output)
 
 ---
 
@@ -202,7 +204,7 @@ _Subprojects in scope:_
 
 **Recommendation:** **Option A (11-Character CSPRNG URL-Safe `short_code` via `node:crypto` + PostgreSQL `UNIQUE` Constraint)** — Delivers short, title-independent, non-enumerable YouTube-style URLs backed by database-level uniqueness without adding ESM-incompatible third-party ID packages to the CommonJS/nodenext NestJS build.
 
-**Decision:** _[pending]_
+**Decision:** A (11-character CSPRNG URL-safe `short_code` via `node:crypto` + PostgreSQL `UNIQUE` constraint)
 
 ---
 
@@ -233,7 +235,7 @@ _Subprojects in scope:_
 
 **Recommendation:** **Option A (Non-Buffered HTTP `Range` `206 Partial Content` + Attachment `StreamableFile` Proxy from S3 `GetObjectCommand`)** — Satisfies RFC 9110 progressive streaming and download with `O(1)` memory, eliminates Docker `minio:9000` vs. `localhost` SigV4 redirect breakage, exempts player chunk requests from `AuthModule` throttling via `@SkipThrottle()`, and keeps OpenAPI contracts self-contained.
 
-**Decision:** _[pending]_
+**Decision:** A (Non-buffered HTTP `Range` `206 Partial Content` + attachment `StreamableFile` proxy from S3 `GetObjectCommand`)
 
 ---
 
@@ -264,7 +266,7 @@ _Subprojects in scope:_
 
 **Recommendation:** **Option A (PostgreSQL Enum `draft → processing → ready | failed` + BullMQ `attempts: 3` Exponential Backoff + `UnrecoverableError`)** — Balances resilience against transient storage/network faults with fast failure on corrupt media, keeps read queries `O(1)` on `videos.status`, and integrates cleanly with `phase-02-auth/TD-07`'s `DomainException` catalog.
 
-**Decision:** _[pending]_
+**Decision:** A (PostgreSQL enum `draft → processing → ready | failed` + BullMQ `attempts: 3` exponential backoff + `UnrecoverableError`)
 
 ---
 
@@ -272,11 +274,11 @@ _Subprojects in scope:_
 
 | ID | Scope | Decision | Recommendation | Choice |
 |----|-------|----------|---------------|--------|
-| TD-01 | Backend | Background Job Queue Technology | Option A (BullMQ + Redis via `@nestjs/bullmq`) | _[pending]_ |
-| TD-02 | Backend | Object Storage SDK, Bucket Topology, and Endpoint Signing Strategy | Option A (`@aws-sdk/client-s3` + `@aws-sdk/s3-request-presigner`, single bucket + prefixes) | _[pending]_ |
-| TD-03 | Cross-layer | Large File Upload Protocol (Up to 10 GiB) and Draft Pre-Registration Handshake | Option A (API-Orchestrated S3 Presigned Multipart Upload + atomic `draft`) | _[pending]_ |
-| TD-04 | Backend | Video Worker Process and Container Topology | Option A (Standalone `NestFactory.createApplicationContext(WorkerModule)` in `video-worker` container) | _[pending]_ |
-| TD-05 | Backend | Video Metadata Extraction and Thumbnail Generation Pipeline | Option A (Direct `ffprobe`/`ffmpeg` `execFile` over Presigned S3 `GET` URL with pipe output) | _[pending]_ |
-| TD-06 | Cross-layer | Unique Video URL Identifier Strategy | Option A (11-char CSPRNG URL-safe `short_code` via `node:crypto` + DB `UNIQUE`) | _[pending]_ |
-| TD-07 | Cross-layer | Video Streaming (`206 Partial Content`) and Download Delivery Strategy | Option A (Non-buffered HTTP `Range` `206` + attachment `StreamableFile` from S3 `GetObjectCommand`) | _[pending]_ |
-| TD-08 | Backend | Video Lifecycle State Machine and Worker Retry/Failure Policy | Option A (PostgreSQL enum `draft → processing → ready \| failed` + BullMQ `attempts: 3` + `UnrecoverableError`) | _[pending]_ |
+| TD-01 | Backend | Background Job Queue Technology | Option A (BullMQ + Redis via `@nestjs/bullmq`) | A (BullMQ + Redis via `@nestjs/bullmq` + `bullmq`) |
+| TD-02 | Backend | Object Storage SDK, Bucket Topology, and Endpoint Signing Strategy | Option A (`@aws-sdk/client-s3` + `@aws-sdk/s3-request-presigner`, single bucket + prefixes) | A (`@aws-sdk/client-s3` + `@aws-sdk/s3-request-presigner`) |
+| TD-03 | Cross-layer | Large File Upload Protocol (Up to 10 GiB) and Draft Pre-Registration Handshake | Option A (API-Orchestrated S3 Presigned Multipart Upload + atomic `draft`) | A (S3 Presigned Multipart Upload + atomic `draft`) |
+| TD-04 | Backend | Video Worker Process and Container Topology | Option A (Standalone `NestFactory.createApplicationContext(WorkerModule)` in `video-worker` container) | A (Standalone `WorkerModule` in `video-worker` container) |
+| TD-05 | Backend | Video Metadata Extraction and Thumbnail Generation Pipeline | Option A (Direct `ffprobe`/`ffmpeg` `execFile` over Presigned S3 `GET` URL with pipe output) | A (Direct `ffprobe`/`ffmpeg` `execFile` over Presigned URL) |
+| TD-06 | Cross-layer | Unique Video URL Identifier Strategy | Option A (11-char CSPRNG URL-safe `short_code` via `node:crypto` + DB `UNIQUE`) | A (11-char CSPRNG `short_code` + DB `UNIQUE`) |
+| TD-07 | Cross-layer | Video Streaming (`206 Partial Content`) and Download Delivery Strategy | Option A (Non-buffered HTTP `Range` `206` + attachment `StreamableFile` from S3 `GetObjectCommand`) | A (Non-buffered HTTP `Range` `206` + `StreamableFile`) |
+| TD-08 | Backend | Video Lifecycle State Machine and Worker Retry/Failure Policy | Option A (PostgreSQL enum `draft → processing → ready \| failed` + BullMQ `attempts: 3` + `UnrecoverableError`) | A (`draft → processing → ready \| failed` + BullMQ `attempts: 3`) |

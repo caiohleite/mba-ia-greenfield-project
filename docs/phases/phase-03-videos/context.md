@@ -3,7 +3,7 @@ kind: phase
 name: phase-03-videos
 sources_mtime:
   docs/project-plan.md: "2026-11-06T22:57:37-03:00"
-  docs/decisions/technical-decisions-phase-03-videos.md: "2026-11-26T22:49:23-03:00"
+  docs/decisions/technical-decisions-phase-03-videos.md: "2026-11-26T23:21:36-03:00"
   docs/decisions/technical-decisions-openapi-docs-nestjs.md: "2026-11-08T22:02:15-03:00"
   docs/phases/phase-01-configuracao-base/context.md: "2026-11-08T22:02:15-03:00"
   docs/phases/phase-02-auth/context.md: "2026-11-08T22:02:15-03:00"
@@ -50,14 +50,14 @@ sources_mtime:
 
 | Ref | Source | Scope | Topic | Status | Decision | Libraries |
 |-----|--------|-------|-------|--------|----------|-----------|
-| phase-03-videos/TD-01 | phase | Backend | Background Job Queue Technology | pending | — | — |
-| phase-03-videos/TD-02 | phase | Backend | Object Storage SDK, Bucket Topology & Signing Strategy | pending | — | — |
-| phase-03-videos/TD-03 | phase | Cross-layer | Large File Upload (Up to 10 GiB) & Draft Pre-Registration | pending | — | — |
-| phase-03-videos/TD-04 | phase | Backend | Video Worker Process and Container Topology | pending | — | — |
-| phase-03-videos/TD-05 | phase | Backend | Video Metadata Extraction and Thumbnail Generation Pipeline | pending | — | — |
-| phase-03-videos/TD-06 | phase | Cross-layer | Unique Video URL Identifier Strategy | pending | — | — |
-| phase-03-videos/TD-07 | phase | Cross-layer | Video Streaming (206 Partial Content) & Download Delivery | pending | — | — |
-| phase-03-videos/TD-08 | phase | Backend | Video Lifecycle State Machine & Worker Retry/Failure Policy | pending | — | — |
+| phase-03-videos/TD-01 | phase | Backend | Background Job Queue Technology | decided | A (BullMQ + Redis) | @nestjs/bullmq, bullmq |
+| phase-03-videos/TD-02 | phase | Backend | Object Storage SDK, Bucket Topology & Signing Strategy | decided | A (AWS SDK v3 + single bucket) | @aws-sdk/client-s3, @aws-sdk/s3-request-presigner |
+| phase-03-videos/TD-03 | phase | Cross-layer | Large File Upload (Up to 10 GiB) & Draft Pre-Registration | decided | A (S3 Presigned Multipart Upload + atomic draft) | — |
+| phase-03-videos/TD-04 | phase | Backend | Video Worker Process and Container Topology | decided | A (Standalone WorkerModule in video-worker container) | — |
+| phase-03-videos/TD-05 | phase | Backend | Video Metadata Extraction and Thumbnail Generation Pipeline | decided | A (Direct execFile ffprobe/ffmpeg over presigned URL) | — |
+| phase-03-videos/TD-06 | phase | Cross-layer | Unique Video URL Identifier Strategy | decided | A (11-char CSPRNG short_code + DB UNIQUE) | — |
+| phase-03-videos/TD-07 | phase | Cross-layer | Video Streaming (206 Partial Content) & Download Delivery | decided | A (Non-buffered HTTP Range 206 + StreamableFile) | — |
+| phase-03-videos/TD-08 | phase | Backend | Video Lifecycle State Machine & Worker Retry/Failure Policy | decided | A (PostgreSQL status enum + BullMQ attempts: 3) | — |
 
 _Source files:_
 
@@ -79,7 +79,45 @@ _Source files:_
 
 ## Decisions Detail
 
-_No decided TDs yet._
+### phase-03-videos/TD-01
+
+**Recommendation:** Official `@nestjs/bullmq` integration matches NestJS 11 and `@nestjs/config` seamlessly, delivers retries, exponential backoff, and `UnrecoverableError` out of the box without manual DLX plumbing (unlike Option B), and honors the dedicated queue container architecture without polling PostgreSQL (unlike Option C).
+**Libraries:** @nestjs/bullmq, bullmq
+
+### phase-03-videos/TD-02
+
+**Recommendation:** Preserves 100% S3 portability between MinIO in Docker and AWS S3 in production, keeps bucket provisioning/testing atomic in one `streamtube` bucket with clean `videos/` and `thumbnails/` prefixes, and handles Docker-vs-public URL signing cleanly via config.
+**Libraries:** @aws-sdk/client-s3, @aws-sdk/s3-request-presigner
+
+### phase-03-videos/TD-03
+
+**Recommendation:** The only architecture that supports 10 GiB above S3's 5 GiB single-PUT limit, keeps NestJS API load at `O(1)` by sending bytes directly to S3/MinIO (aligning with `next-frontend-config-base/TD-03`), pre-registers the `draft` record atomically at handshake start, and exposes clean OpenAPI-typed REST endpoints (`openapi-docs-nestjs/TD-02`).
+**Libraries:** —
+
+### phase-03-videos/TD-04
+
+**Recommendation:** Delivers true container-level process isolation between HTTP API and FFmpeg worker as required by the C4 architecture while reusing 100% of `nestjs-project/`'s TypeORM entities, `registerAs` configs (`phase-01-configuracao-base/TD-03`), and `StorageModule`.
+**Libraries:** —
+
+### phase-03-videos/TD-05
+
+**Recommendation:** Avoids downloading 10 GiB files to disk via native HTTP `Range` seeking, produces zero temporary filesystem artifacts, prevents shell injection, and avoids deprecated wrapper packages (`fluent-ffmpeg`).
+**Libraries:** —
+
+### phase-03-videos/TD-06
+
+**Recommendation:** Delivers short, title-independent, non-enumerable YouTube-style URLs backed by database-level uniqueness without adding ESM-incompatible third-party ID packages to the CommonJS/nodenext NestJS build.
+**Libraries:** —
+
+### phase-03-videos/TD-07
+
+**Recommendation:** Satisfies RFC 9110 progressive streaming and download with `O(1)` memory, eliminates Docker `minio:9000` vs. `localhost` SigV4 redirect breakage, exempts player chunk requests from `AuthModule` throttling via `@SkipThrottle()`, and keeps OpenAPI contracts self-contained.
+**Libraries:** —
+
+### phase-03-videos/TD-08
+
+**Recommendation:** Balances resilience against transient storage/network faults with fast failure on corrupt media, keeps read queries `O(1)` on `videos.status`, and integrates cleanly with `phase-02-auth/TD-07`'s `DomainException` catalog.
+**Libraries:** —
 
 ## Inherited Decisions Detail
 
